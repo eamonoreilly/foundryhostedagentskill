@@ -20,18 +20,62 @@ Containerized AI agents running on Foundry Agent Service, exposing HTTP endpoint
 
 ## Decision Tree: Choose Your Path
 
-**Step 1**: Call `aitk-list_foundry_models` tool OR ask user about existing infrastructure.
+**Step 1**: Call `aitk-list_foundry_models` tool to check for existing infrastructure.
 
-**Step 2**: Choose path based on result:
+**Step 2**: ALWAYS ask the user which approach they prefer:
 
-| Situation | Template | Deploy With |
-|-----------|----------|-------------|
-| Tool returns project info / user has existing project | Minimal | `az cognitiveservices agent` |
-| Tool returns error / user needs new infrastructure | Full azd | `azd ai agent` |
+### If existing project is found:
+Present both options to the user:
+> "I found an existing Foundry project that you can use:
+> - **Project**: `<project-name>`
+> - **Endpoint**: `<endpoint>`
+> - **Models**: `<list of deployed models>`
+>
+> Would you like to:
+> 1. **Use this existing project** - Deploy your agent to the existing infrastructure (faster, uses `az cognitiveservices agent`)
+> 2. **Create new infrastructure** - Set up a brand new Foundry project with its own resources (uses `azd ai agent`)
+>
+> Which would you prefer?"
+
+### If no existing project is found:
+Inform the user and proceed with new infrastructure:
+> "No existing Foundry project was found. I'll help you create new infrastructure using `azd ai agent`."
+
+**Step 3**: Follow the appropriate path based on user's choice:
+
+| User Choice | Template | Deploy With |
+|-------------|----------|-------------|
+| Use existing project | Minimal | `az cognitiveservices agent` |
+| Create new infrastructure | Full azd | `azd ai agent` |
 
 ---
 
 ## Path A: New Infrastructure (azd ai agent)
+
+### CRITICAL: Always Use GitHub Samples
+
+**NEVER manually create agent.yaml, main.py, Dockerfile, or requirements.txt files.** The `azd ai agent init` command expects a specific format that is difficult to replicate manually.
+
+**ALWAYS use one of these approaches:**
+
+#### Option 1: Use a GitHub Sample Directly (Recommended)
+```bash
+azd ai agent init -m https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/agent-framework/agent-with-local-tools/agent.yaml
+```
+This downloads all properly formatted files automatically.
+
+#### Option 2: Fetch Sample as Reference Before Customizing
+If the user needs a custom agent, first fetch a sample to use as a reference:
+```bash
+# Use fetch_webpage tool to get the sample files
+# URLs to fetch:
+# - https://raw.githubusercontent.com/microsoft-foundry/foundry-samples/main/samples/python/hosted-agents/agent-framework/agent-with-local-tools/agent.yaml
+# - https://raw.githubusercontent.com/microsoft-foundry/foundry-samples/main/samples/python/hosted-agents/agent-framework/agent-with-local-tools/main.py
+# - https://raw.githubusercontent.com/microsoft-foundry/foundry-samples/main/samples/python/hosted-agents/agent-framework/agent-with-local-tools/requirements.txt
+# - https://raw.githubusercontent.com/microsoft-foundry/foundry-samples/main/samples/python/hosted-agents/agent-framework/agent-with-local-tools/Dockerfile
+```
+
+Then create custom files based on the fetched reference, ensuring the format matches exactly.
 
 ### Recommended Workflow
 
