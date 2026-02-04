@@ -43,13 +43,38 @@ azd provision
 # 2. Deploy the agent
 azd deploy <agent-name>
 
-# 3. Verify deployment
+# 3. IMPORTANT: Check the console output for errors
+# The deploy command prints logs - look for errors like:
+# - Container build failures
+# - Missing environment variables
+# - Role assignment issues
+
+# 4. Verify deployment status
 az cognitiveservices agent status \
     --account-name <account> \
     --project-name <project> \
     --name <agent-name> \
     --agent-version 1
+
+# 5. If status shows issues, check detailed logs
+az cognitiveservices agent logs show \
+    --account-name <account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --agent-version 1
 ```
+
+### CRITICAL: Always Check Console Output After Deploy
+
+After running `azd deploy` or `azd up`, **always review the console output** for errors before assuming the deployment succeeded. Common issues that appear in the output:
+
+- Container image build failures
+- ACR push errors
+- Missing or incorrect environment variables
+- Role assignment problems
+- Agent startup failures
+
+If the console shows errors, see the `foundry-hosted-agents-troubleshoot` skill for resolution steps.
 
 ### azd CLI Quick Reference
 
