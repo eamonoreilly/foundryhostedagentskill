@@ -83,8 +83,14 @@ When you create a hosted agent project, it will have this structure:
 my-project/
 ├── .github/
 │   └── copilot-skills/           # Copilot skills for this project
-│       └── foundry-hosted-agents/
-│           └── SKILL.md
+│       ├── foundry-hosted-agents-create/
+│       │   └── SKILL.md          # Creating and scaffolding agents
+│       ├── foundry-hosted-agents-test/
+│       │   └── SKILL.md          # Local and remote testing
+│       ├── foundry-hosted-agents-deploy/
+│       │   └── SKILL.md          # Deployment workflows
+│       └── foundry-hosted-agents-troubleshoot/
+│           └── SKILL.md          # Error diagnosis and fixes
 ├── azure.yaml                    # azd service definitions
 ├── infra/                        # Bicep infrastructure
 ├── src/
@@ -96,6 +102,17 @@ my-project/
 ├── .env                          # Local development config
 └── README.md
 ```
+
+## Skills Overview
+
+The Copilot skills are split by workflow for better matching:
+
+| Skill | Triggers When You Ask About |
+|-------|----------------------------|
+| `foundry-hosted-agents-create` | Creating, scaffolding, initializing new agents |
+| `foundry-hosted-agents-test` | Running, testing, debugging agents locally or remotely |
+| `foundry-hosted-agents-deploy` | Deploying, publishing agents to Azure |
+| `foundry-hosted-agents-troubleshoot` | Errors, failures, logs, permission issues |
 
 ## Workflow Overview
 
