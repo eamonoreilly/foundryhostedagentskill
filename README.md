@@ -82,7 +82,7 @@ When you create a hosted agent project, it will have this structure:
 ```
 my-project/
 ├── .github/
-│   └── copilot-skills/           # Copilot skills for this project
+│   └── skills/                   # Copilot skills for this project
 │       ├── foundry-hosted-agents-create/
 │       │   └── SKILL.md          # Creating and scaffolding agents
 │       ├── foundry-hosted-agents-test/
