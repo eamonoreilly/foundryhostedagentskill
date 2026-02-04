@@ -83,6 +83,8 @@ When you create a hosted agent project, it will have this structure:
 my-project/
 ├── .github/
 │   └── skills/                   # Copilot skills for this project
+│       ├── foundry-hosted-agents-quickstart/
+│       │   └── SKILL.md          # Getting started guide (start here!)
 │       ├── foundry-hosted-agents-create/
 │       │   └── SKILL.md          # Creating and scaffolding agents
 │       ├── foundry-hosted-agents-test/
@@ -109,6 +111,7 @@ The Copilot skills are split by workflow for better matching:
 
 | Skill | Triggers When You Ask About |
 |-------|----------------------------|
+| `foundry-hosted-agents-quickstart` | Getting started, tutorials, how do I, first agent, beginner |
 | `foundry-hosted-agents-create` | Creating, scaffolding, initializing new agents |
 | `foundry-hosted-agents-test` | Running, testing, debugging agents locally or remotely |
 | `foundry-hosted-agents-deploy` | Deploying, publishing agents to Azure |

@@ -333,6 +333,18 @@ azd deploy my-agent
 
 ---
 
+## NEXT STEPS
+
+After creating your agent project:
+
+1. **Test locally first** - Run `python main.py` and test with `curl http://localhost:8088/responses`
+2. **Then deploy** - Use `azd deploy <agent-name>` once local tests pass
+3. **Test deployed agent** - Use the SDK approach (not curl) for remote testing
+
+See `foundry-hosted-agents-test` skill for detailed testing guidance.
+
+---
+
 ## Resources
 
 - [Quickstart](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/quickstarts/quickstart-hosted-agent)

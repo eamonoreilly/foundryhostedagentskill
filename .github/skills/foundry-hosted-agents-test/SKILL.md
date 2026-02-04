@@ -23,6 +23,17 @@ pip install -r requirements.txt
 az login
 ```
 
+### Requirements for Local Development
+
+The `requirements.txt` should contain:
+```
+python-dotenv
+azure-identity
+azure-ai-agentserver-agentframework
+```
+
+### Environment Configuration
+
 Ensure `.env` file exists with:
 ```env
 PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
@@ -115,10 +126,18 @@ if __name__ == "__main__":
     test_deployed_agent()
 ```
 
-### Dependencies for Remote Testing
+### Requirements for Remote Testing
 
+Install these packages (different from local testing!):
 ```bash
 pip install azure-ai-projects azure-identity python-dotenv
+```
+
+Or add to requirements.txt:
+```
+azure-ai-projects
+azure-identity
+python-dotenv
 ```
 
 ### Run Remote Test
@@ -217,3 +236,30 @@ az cognitiveservices agent logs show \
     --name <agent-name> \
     --agent-version 1
 ```
+
+---
+
+## NEXT STEPS
+
+### After Local Testing Passes
+
+➡️ **Deploy your agent**: Run `azd deploy <agent-name>` and check console output for errors.
+
+See `foundry-hosted-agents-deploy` skill for deployment options.
+
+### After Remote Testing Passes
+
+✅ **Your agent is production-ready!** Consider:
+- Adding more tools to your agent
+- Setting up CI/CD with `azd pipeline config`
+- Adding Application Insights for monitoring
+
+---
+
+## QUICK REFERENCE: Requirements by Scenario
+
+| Scenario | Packages |
+|----------|----------|
+| Local Development | `python-dotenv`, `azure-identity`, `azure-ai-agentserver-agentframework` |
+| Remote Testing | `azure-ai-projects`, `azure-identity`, `python-dotenv` |
+| Full Development | All of the above |

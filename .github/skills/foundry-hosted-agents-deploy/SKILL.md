@@ -280,6 +280,31 @@ Common deployment issues:
 
 ---
 
+## NEXT STEPS
+
+### After Deployment Succeeds
+
+➡️ **Test your deployed agent using the SDK** (not curl!).
+
+Deployed agents require a different testing approach than local testing:
+
+```bash
+# Install test dependencies
+pip install azure-ai-projects azure-identity python-dotenv
+```
+
+Then use `AIProjectClient.get_openai_client()` with `extra_body={"agent": {...}}`.
+
+See `foundry-hosted-agents-test` skill for the complete remote testing script.
+
+### If Deployment Failed
+
+1. Check the console output for errors
+2. Run `az cognitiveservices agent logs show ...` for detailed logs
+3. See `foundry-hosted-agents-troubleshoot` skill for error resolution
+
+---
+
 ## Resources
 
 - [CLI Reference](https://learn.microsoft.com/en-us/cli/azure/cognitiveservices/agent)
