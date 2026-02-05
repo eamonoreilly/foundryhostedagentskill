@@ -1,6 +1,6 @@
 ---
 name: foundry-hosted-agents-deploy
-description: Deploy Foundry Hosted Agents to Azure. Use when users ask to deploy, publish, push, release, or ship hosted agents. Triggers include azd deploy, azd up, az cognitiveservices agent create, deploy to Azure, push agent, publish agent.
+description: Deploy Foundry Hosted Agents to Azure. Use when users ask to deploy, publish, push, release, or ship hosted agents. Triggers include azd deploy, azd up, az cognitiveservices agent create, deploy to Azure, push agent, publish agent. USE FOR: azd deploy, azd up, deploy agent, push agent, publish agent, az cognitiveservices agent create, deploy to Azure, release agent, ship agent. DO NOT USE FOR: creating new projects (use foundry-hosted-agents-create), testing agents (use foundry-hosted-agents-test), fixing deployment errors (use foundry-hosted-agents-troubleshoot), learning basics (use foundry-hosted-agents-quickstart).
 ---
 
 # Deploy Foundry Hosted Agents

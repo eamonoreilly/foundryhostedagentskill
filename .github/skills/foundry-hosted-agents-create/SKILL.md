@@ -1,6 +1,6 @@
 ---
 name: foundry-hosted-agents-create
-description: Create and initialize new Foundry Hosted Agent projects. Use when users ask to create, scaffold, initialize, start, or set up a new hosted agent. Triggers include azd ai agent init, agent.yaml, new agent project, create hosted agent, azd init.
+description: Create and initialize new Foundry Hosted Agent projects. Use when users ask to create, scaffold, initialize, start, or set up a new hosted agent. Triggers include azd ai agent init, agent.yaml, new agent project, create hosted agent, azd init. USE FOR: create hosted agent, azd init, azd ai agent init, scaffold agent project, new agent, initialize agent, set up hosted agent, agent.yaml setup. DO NOT USE FOR: deploying agents (use foundry-hosted-agents-deploy), testing agents (use foundry-hosted-agents-test), fixing errors (use foundry-hosted-agents-troubleshoot), beginner tutorials (use foundry-hosted-agents-quickstart).
 ---
 
 # Create Foundry Hosted Agents

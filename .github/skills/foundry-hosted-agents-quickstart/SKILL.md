@@ -1,6 +1,6 @@
 ---
 name: foundry-hosted-agents-quickstart
-description: Get started with Foundry Hosted Agents from scratch. Use when users are new to hosted agents, want a tutorial, or ask how to build their first agent. Triggers include get started, help me build, how do I, quickstart, tutorial, walkthrough, step by step, new to hosted agents, first agent, beginner, learn hosted agents.
+description: Get started with Foundry Hosted Agents from scratch. Use when users are new to hosted agents, want a tutorial, or ask how to build their first agent. Triggers include get started, help me build, how do I, quickstart, tutorial, walkthrough, step by step, new to hosted agents, first agent, beginner, learn hosted agents. USE FOR: get started, quickstart, tutorial, walkthrough, step by step, new to hosted agents, first agent, beginner, learn hosted agents, how do I build an agent, help me build. DO NOT USE FOR: specific create operations (use foundry-hosted-agents-create), deployment details (use foundry-hosted-agents-deploy), testing specifics (use foundry-hosted-agents-test), error resolution (use foundry-hosted-agents-troubleshoot).
 ---
 
 # Foundry Hosted Agents Quickstart
