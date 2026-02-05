@@ -138,6 +138,55 @@ az cognitiveservices agent create \
     --show-logs
 ```
 
+### Deploy with Application Insights
+
+**First, check if project already has an AppInsights connection:**
+
+```bash
+# Check for AppInsights connection (if exists, connection string is auto-injected)
+az rest --method GET \
+    --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<account>/projects/<project>/connections?api-version=2025-06-01" \
+    --query "value[?properties.category=='AppInsights'].name" -o tsv
+```
+
+**If AppInsights connection exists:** Deploy normally - no extra env var needed:
+
+```bash
+# Connection string is auto-injected by the service
+az cognitiveservices agent create \
+    --account-name <foundry-account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --source . \
+    --registry <acr-name> \
+    --env PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project> MODEL_DEPLOYMENT_NAME=gpt-4.1 \
+    --show-logs
+```
+
+**If NO AppInsights connection:** Pass the connection string manually:
+
+```bash
+# Get the connection string
+APPINSIGHTS_CONN=$(az monitor app-insights component show \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --query connectionString -o tsv)
+
+# Deploy with Application Insights
+az cognitiveservices agent create \
+    --account-name <foundry-account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --source . \
+    --registry <acr-name> \
+    --env PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project> MODEL_DEPLOYMENT_NAME=gpt-4.1 APPLICATIONINSIGHTS_CONNECTION_STRING="$APPINSIGHTS_CONN" \
+    --show-logs
+```
+
+**What to look for in startup logs:**
+- ✅ `Observability setup completed with provided exporters` - App Insights connected
+- ⚠️ `APPLICATIONINSIGHTS_CONNECTION_STRING not set` - Telemetry disabled (add connection or pass env var)
+
 ### Deploy with All Options
 
 ```bash
@@ -318,6 +367,167 @@ See `foundry-hosted-agents-test` skill for the complete remote testing script.
 1. Check the console output for errors
 2. Run `az cognitiveservices agent logs show ...` for detailed logs
 3. See `foundry-hosted-agents-troubleshoot` skill for error resolution
+
+---
+
+## WHEN USER ASKS ABOUT APPLICATION INSIGHTS:
+
+### Step 1: Check if Project Has AppInsights Connection
+
+Foundry projects can have an Application Insights connection configured. When this exists, the service **automatically injects** `APPLICATIONINSIGHTS_CONNECTION_STRING` at runtime - you don't need to pass it manually.
+
+```bash
+# Query project connections for AppInsights
+az rest --method GET \
+    --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<account>/projects/<project>/connections?api-version=2025-06-01" \
+    --query "value[?properties.category=='AppInsights'].{name:name, target:properties.target}" \
+    -o table
+```
+
+**If AppInsights connection exists:**
+- ✅ No action needed - `APPLICATIONINSIGHTS_CONNECTION_STRING` is auto-injected at runtime
+- ✅ Deploy without passing the connection string manually
+- ✅ Verify logs show: `Observability setup completed with provided exporters`
+
+**If NO AppInsights connection:** Continue to Step 2.
+
+---
+
+### Step 2: Find Application Insights Resources
+
+**First, check the same resource group:**
+
+```bash
+az resource list --resource-type "Microsoft.Insights/components" \
+    --resource-group <resource-group> \
+    --query "[].{name:name, id:id}" -o table
+```
+
+**If not found, search the entire subscription:**
+
+```bash
+az resource list --resource-type "Microsoft.Insights/components" \
+    --query "[].{name:name, resourceGroup:resourceGroup, id:id}" -o table
+```
+
+**If no Application Insights exists anywhere:** Create one first (see Step 4).
+
+---
+
+### Step 3: Create AppInsights Connection on Project (RECOMMENDED)
+
+Once you have an Application Insights resource, create a connection to enable auto-injection:
+
+```bash
+# Set variables
+SUBSCRIPTION_ID="<subscription-id>"
+RESOURCE_GROUP="<resource-group>"
+ACCOUNT_NAME="<foundry-account>"
+PROJECT_NAME="<project>"
+APPINSIGHTS_NAME="<app-insights-name>"
+CONNECTION_NAME="${APPINSIGHTS_NAME}-connection"
+
+# Get App Insights resource ID and connection string
+APPINSIGHTS_ID=$(az monitor app-insights component show \
+    --app $APPINSIGHTS_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --query id -o tsv)
+
+CONN_STRING=$(az monitor app-insights component show \
+    --app $APPINSIGHTS_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --query connectionString -o tsv)
+
+# Create JSON body file (avoids shell escaping issues)
+cat > /tmp/appinsights-connection.json << EOF
+{
+    "properties": {
+        "authType": "ApiKey",
+        "category": "AppInsights",
+        "credentials": {
+            "key": "${CONN_STRING}"
+        },
+        "group": "ServicesAndApps",
+        "isDefault": true,
+        "metadata": {
+            "ApiType": "Azure",
+            "ResourceId": "${APPINSIGHTS_ID}"
+        },
+        "target": "${APPINSIGHTS_ID}"
+    }
+}
+EOF
+
+# Create the connection
+az rest --method PUT \
+    --url "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${ACCOUNT_NAME}/projects/${PROJECT_NAME}/connections/${CONNECTION_NAME}?api-version=2025-06-01" \
+    --body @/tmp/appinsights-connection.json
+
+# Clean up
+rm /tmp/appinsights-connection.json
+```
+
+**After creating connection:**
+- Redeploy the agent (connection string will be auto-injected)
+- Verify startup logs show: `Observability setup completed with provided exporters`
+
+---
+
+### Step 4: If No Application Insights Resource Exists - Create One
+
+```bash
+# Create Application Insights
+az monitor app-insights component create \
+    --app <app-insights-name> \
+    --location <location> \
+    --resource-group <resource-group> \
+    --kind web \
+    --application-type web
+
+# Then create the connection (Step 3)
+```
+
+---
+
+### Alternative: Pass Connection String Manually (Not Recommended)
+
+If you prefer not to create a project connection, you can pass the connection string during deployment:
+
+```bash
+# Get the connection string
+APPINSIGHTS_CONN=$(az monitor app-insights component show \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --query connectionString -o tsv)
+
+# Deploy with connection string
+az cognitiveservices agent create \
+    --account-name <account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --source . \
+    --registry <acr-name> \
+    --env PROJECT_ENDPOINT=<endpoint> MODEL_DEPLOYMENT_NAME=gpt-4.1 APPLICATIONINSIGHTS_CONNECTION_STRING="$APPINSIGHTS_CONN" \
+    --show-logs
+```
+
+**Note:** This approach requires passing the connection string on every deployment. Creating a project connection (Step 3) is preferred.
+
+### Verify Logs Are Flowing After Deployment
+
+```bash
+# Check for agent traces (wait 2-5 min after deployment)
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'traces | where timestamp > ago(10m) | where message has "CreateResponse" or message has "agent" | project timestamp, message | order by timestamp desc | take 10'
+
+# Check telemetry types being captured
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'union traces, requests, dependencies | where timestamp > ago(10m) | summarize count() by itemType'
+```
 
 ---
 

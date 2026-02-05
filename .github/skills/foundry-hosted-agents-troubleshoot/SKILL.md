@@ -226,21 +226,110 @@ python src/<agent-name>/main.py
 Application Insights connection string is not set or invalid.
 
 ### Impact
-**This is usually NOT a critical error.** The agent will work without App Insights.
+**This is usually NOT a critical error.** The agent will work without App Insights, but you lose valuable observability.
 
-### Solution (Optional)
-If you want telemetry, set the connection string:
+### Solution
+
+**Step 1: Check if project has AppInsights connection (auto-injection)**
 
 ```bash
-# Find your App Insights connection string
-az monitor app-insights component show \
-    --app <app-insights-name> \
-    --resource-group <rg> \
-    --query connectionString -o tsv
-
-# Add to .env or --env during deployment
-APPLICATIONINSIGHTS_CONNECTION_STRING=<connection-string>
+# If this returns a result, connection string should be auto-injected
+az rest --method GET \
+    --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<account>/projects/<project>/connections?api-version=2025-06-01" \
+    --query "value[?properties.category=='AppInsights'].name" -o tsv
 ```
+
+**If AppInsights connection exists:** The connection string should be auto-injected. Try redeploying the agent.
+
+**If NO AppInsights connection:** Continue to find and connect Application Insights.
+
+---
+
+**Step 2: Find Application Insights resources**
+
+```bash
+# Check resource group first
+az resource list --resource-type "Microsoft.Insights/components" \
+    --resource-group <resource-group> \
+    --query "[].{name:name, id:id}" -o table
+
+# If not found, search entire subscription
+az resource list --resource-type "Microsoft.Insights/components" \
+    --query "[].{name:name, resourceGroup:resourceGroup, id:id}" -o table
+```
+
+---
+
+**Step 3a: If App Insights exists - Create project connection (RECOMMENDED)**
+
+```bash
+# Set variables
+SUBSCRIPTION_ID="<subscription-id>"
+RESOURCE_GROUP="<resource-group>"
+ACCOUNT_NAME="<foundry-account>"
+PROJECT_NAME="<project>"
+APPINSIGHTS_NAME="<app-insights-name>"
+CONNECTION_NAME="${APPINSIGHTS_NAME}-connection"
+
+# Get App Insights resource ID and connection string
+APPINSIGHTS_ID=$(az monitor app-insights component show \
+    --app $APPINSIGHTS_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --query id -o tsv)
+
+CONN_STRING=$(az monitor app-insights component show \
+    --app $APPINSIGHTS_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --query connectionString -o tsv)
+
+# Create JSON body file (avoids shell escaping issues)
+cat > /tmp/appinsights-connection.json << EOF
+{
+    "properties": {
+        "authType": "ApiKey",
+        "category": "AppInsights",
+        "credentials": {
+            "key": "${CONN_STRING}"
+        },
+        "group": "ServicesAndApps",
+        "isDefault": true,
+        "metadata": {
+            "ApiType": "Azure",
+            "ResourceId": "${APPINSIGHTS_ID}"
+        },
+        "target": "${APPINSIGHTS_ID}"
+    }
+}
+EOF
+
+# Create the connection
+az rest --method PUT \
+    --url "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${ACCOUNT_NAME}/projects/${PROJECT_NAME}/connections/${CONNECTION_NAME}?api-version=2025-06-01" \
+    --body @/tmp/appinsights-connection.json
+
+# Redeploy agent (connection string will be auto-injected)
+```
+
+---
+
+**Step 3b: If NO App Insights exists - Create one first**
+
+```bash
+az monitor app-insights component create \
+    --app <app-insights-name> \
+    --location <location> \
+    --resource-group <resource-group> \
+    --kind web \
+    --application-type web
+
+# Then create the connection (Step 3a)
+```
+
+---
+
+**Step 4: Verify observability is working**
+
+Check startup logs for: `Observability setup completed with provided exporters`
 
 ---
 
@@ -330,6 +419,7 @@ az role assignment list \
 - [ ] `--env` includes `PROJECT_ENDPOINT` and `MODEL_DEPLOYMENT_NAME`
 - [ ] Model deployment exists and name matches
 - [ ] Dockerfile and requirements.txt are correct
+- [ ] (Optional) `APPLICATIONINSIGHTS_CONNECTION_STRING` included for observability
 
 ### For Remote Testing Issues
 
@@ -338,6 +428,57 @@ az role assignment list \
 - [ ] Including `extra_body={"agent": {...}}`
 - [ ] Agent name matches agent.yaml exactly
 - [ ] Azure CLI logged in: `az login`
+
+### For Observability Issues
+
+- [ ] Application Insights exists: `az resource list --resource-type "Microsoft.Insights/components" --resource-group <rg>`
+- [ ] Agent deployed with `APPLICATIONINSIGHTS_CONNECTION_STRING`
+- [ ] Startup logs show: `Observability setup completed with provided exporters`
+- [ ] Telemetry appearing: `az monitor app-insights query --app <name> --analytics-query 'traces | take 5'`
+
+---
+
+## WHEN USER ASKS TO DIAGNOSE WITH APPLICATION INSIGHTS:
+
+### Query Agent Request Logs
+
+```bash
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'traces | where timestamp > ago(30m) | where message has "CreateResponse" or message has "Error" or message has "Exception" | project timestamp, message, severityLevel | order by timestamp desc | take 30' \
+    -o json
+```
+
+### Query for Errors Only
+
+```bash
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'traces | where timestamp > ago(1h) | where severityLevel >= 3 | project timestamp, message | order by timestamp desc | take 50' \
+    -o json
+```
+
+### Query Model Call Performance
+
+```bash
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'dependencies | where timestamp > ago(1h) | where name has "chat" | summarize avgDuration=avg(duration), count=count() by name' \
+    -o json
+```
+
+### Query Failed Dependencies
+
+```bash
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'dependencies | where timestamp > ago(1h) | where success == false | project timestamp, name, duration, resultCode | order by timestamp desc' \
+    -o json
+```
 
 ---
 

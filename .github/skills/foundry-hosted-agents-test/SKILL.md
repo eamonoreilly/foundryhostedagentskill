@@ -278,6 +278,95 @@ See `foundry-hosted-agents-deploy` skill for deployment options.
 
 ---
 
+## WHEN USER ASKS TO VERIFY TESTS IN APPLICATION INSIGHTS:
+
+### Step 1: Check if Project Has AppInsights Connection
+
+```bash
+# Query project connections for AppInsights
+az rest --method GET \
+    --url "https://management.azure.com/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<account>/projects/<project>/connections?api-version=2025-06-01" \
+    --query "value[?properties.category=='AppInsights'].{name:name, appInsightsId:properties.metadata.ResourceId}" \
+    -o table
+```
+
+**If AppInsights connection exists:**
+- ✅ Connection string is auto-injected at runtime
+- ✅ Extract the App Insights name from the ResourceId for queries below
+
+**If NO AppInsights connection:** You need to set one up first. See `foundry-hosted-agents-deploy` skill for instructions.
+
+---
+
+### Step 2: Find Application Insights Resource Name
+
+If no project connection, find App Insights resources:
+
+```bash
+# Check resource group first
+az resource list --resource-type "Microsoft.Insights/components" \
+    --resource-group <resource-group> \
+    --query "[].name" -o tsv
+
+# If not found, search entire subscription
+az resource list --resource-type "Microsoft.Insights/components" \
+    --query "[].{name:name, resourceGroup:resourceGroup}" -o table
+```
+
+**If no App Insights exists:** See `foundry-hosted-agents-deploy` skill to create and connect one.
+
+### Verify Agent Logs in Application Insights
+
+```bash
+# Check for recent agent request processing logs
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'traces | where timestamp > ago(15m) | where message has "CreateResponse" or message has "agent_run" | project timestamp, message, severityLevel | order by timestamp desc | take 20' \
+    -o json
+```
+
+**Expected log messages:**
+- `Start processing CreateResponse request` - Request received
+- `Starting AIAgent agent_run` - Agent processing started
+- `Agent run and transformation completed successfully` - Request succeeded
+- `End of processing CreateResponse request` - Request finished
+
+### Check Model and Tool Call Dependencies
+
+```bash
+# View model API calls and tool executions
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'dependencies | where timestamp > ago(15m) | project timestamp, name, duration, success | order by timestamp desc | take 20' \
+    -o json
+```
+
+**What you should see:**
+- `invoke_agent <AgentName>` - Agent invocation
+- `chat gpt-4.1` - Model API calls
+- `execute_tool <tool_name>` - Tool executions
+
+### Check for Errors in Application Insights
+
+```bash
+# Query for any errors
+az monitor app-insights query \
+    --app <app-insights-name> \
+    --resource-group <resource-group> \
+    --analytics-query 'traces | where timestamp > ago(15m) | where severityLevel >= 3 | project timestamp, message, severityLevel | order by timestamp desc | take 20' \
+    -o json
+```
+
+### If Logs Are Not Appearing
+
+1. **Check agent startup logs** for `Observability setup completed with provided exporters`
+2. **If missing**, the agent was deployed without `APPLICATIONINSIGHTS_CONNECTION_STRING`
+3. **Redeploy** with the connection string - see `foundry-hosted-agents-deploy` skill
+
+---
+
 ## QUICK REFERENCE: Requirements by Scenario
 
 | Scenario | Packages |
