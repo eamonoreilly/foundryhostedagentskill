@@ -147,6 +147,28 @@ az login
 python test_deployed_agent.py
 ```
 
+### REQUIRED: Check Agent Logs After Testing
+
+**Always check the agent logs after remote testing** to verify there are no errors. The SDK response may show success even when the agent has internal errors (e.g., tracing issues, tool failures, warnings).
+
+```bash
+az cognitiveservices agent logs show \
+    --account-name <account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --agent-version <version>
+```
+
+**What to look for:**
+- ✅ `INFO: ... 200 OK` - Requests succeeded
+- ✅ `Streaming completed with N updates` - Agent responded
+- ⚠️ `Failed to detach context` - OpenTelemetry async issue (non-critical)
+- ❌ `ERROR` or `Exception` - Investigate immediately
+- ❌ `AuthenticationError` - Check credentials/roles
+- ❌ `Model access denied` - Check Azure AI User role
+
+**If you skip this step**, issues like tracing errors, tool failures, or rate limiting may go unnoticed until they cause problems in production.
+
 ---
 
 ## WHEN USER ASKS ABOUT TESTING DIFFERENCES:

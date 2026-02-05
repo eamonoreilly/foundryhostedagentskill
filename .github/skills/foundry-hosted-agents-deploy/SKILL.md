@@ -43,30 +43,46 @@ azd provision
 # 2. Deploy the agent
 azd deploy <agent-name>
 
-# 3. IMPORTANT: Check the console output for errors
-# The deploy command prints logs - look for errors like:
-# - Container build failures
-# - Missing environment variables
-# - Role assignment issues
+# 3. REQUIRED: Check agent logs to verify healthy startup
+az cognitiveservices agent logs show \
+    --account-name <account> \
+    --project-name <project> \
+    --name <agent-name> \
+    --agent-version <version>
 
 # 4. Verify deployment status
 az cognitiveservices agent status \
     --account-name <account> \
     --project-name <project> \
     --name <agent-name> \
-    --agent-version 1
+    --agent-version <version>
+```
 
-# 5. If status shows issues, check detailed logs
+### REQUIRED: Check Agent Logs After Deploy
+
+**Always check the agent logs after deployment** - do not skip this step. The deployment may succeed but the agent container may have startup errors, missing environment variables, or configuration issues that only appear in the logs.
+
+```bash
 az cognitiveservices agent logs show \
     --account-name <account> \
     --project-name <project> \
     --name <agent-name> \
-    --agent-version 1
+    --agent-version <version>
 ```
 
-### CRITICAL: Always Check Console Output After Deploy
+**What to look for:**
+- ✅ `Application startup complete` - Agent started successfully
+- ✅ `GET /readiness 200 OK` - Health checks passing
+- ✅ `Uvicorn running on http://0.0.0.0:8088` - Server listening
+- ❌ `Invalid connection string` - Check APPLICATIONINSIGHTS_CONNECTION_STRING
+- ❌ `AuthenticationError` - Check Azure credentials/roles
+- ❌ `Model not found` - Check MODEL_DEPLOYMENT_NAME
 
-After running `azd deploy` or `azd up`, **always review the console output** for errors before assuming the deployment succeeded. Common issues that appear in the output:
+**If you skip this step**, issues like environment variable problems, authentication failures, or SDK errors may go unnoticed until the agent fails in production.
+
+### Console Output During Deploy
+
+After running `azd deploy` or `azd up`, also review the console output for errors:
 
 - Container image build failures
 - ACR push errors
