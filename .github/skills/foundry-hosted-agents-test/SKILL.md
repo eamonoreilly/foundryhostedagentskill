@@ -1,6 +1,6 @@
 ---
 name: foundry-hosted-agents-test
-description: Test Foundry Hosted Agents locally and remotely. Use when users ask to test, run, debug, execute, or call hosted agents. Triggers include curl localhost:8088, test agent, run agent locally, test deployed agent, python main.py, agent not responding. USE FOR: test agent, run agent locally, curl localhost:8088, python main.py, test deployed agent, run agent, execute agent, call agent, verify agent works. DO NOT USE FOR: creating agents (use foundry-hosted-agents-create), deploying agents (use foundry-hosted-agents-deploy), fixing errors (use foundry-hosted-agents-troubleshoot), getting started tutorials (use foundry-hosted-agents-quickstart).
+description: Test Foundry Hosted Agents locally and remotely. Use when users ask to test, run, debug, execute, or call hosted agents. Triggers include curl localhost:8088, test agent, run agent locally, test deployed agent, python main.py, agent not responding. USE FOR: test agent, run agent locally, curl localhost:8088, python main.py, test deployed agent, run agent, execute agent, call agent, verify agent works. DO NOT USE FOR: creating agents (use foundry-hosted-agents-create), deploying agents (use foundry-hosted-agents-deploy), fixing errors (use foundry-hosted-agents-troubleshoot), getting started tutorials (use foundry-hosted-agents-quickstart). INVOKES: run_in_terminal for curl/python commands, configure_python_environment for setup. FOR SINGLE OPERATIONS: run curl or python commands directly if agent is already running.
 ---
 
 # Test Foundry Hosted Agents
